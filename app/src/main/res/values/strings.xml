@@ -1,0 +1,55 @@
+<resources>
+    <string name="app_name">Wordle_Test</string>
+    <array name="words">
+        <item>AKHIR</item>
+        <item>ALAMI</item>
+        <item>ANEKA</item>
+        <item>ANGKA</item>
+        <item>BALIK</item>
+        <item>BANTU</item>
+        <item>BEBAS</item>
+        <item>BENAR</item>
+        <item>BERAT</item>
+        <item>BESAR</item>
+        <item>BUDAK</item>
+        <item>CUKUP</item>
+        <item>CINTA</item>
+        <item>DALAM</item>
+        <item>DASAR</item>
+        <item>DEPAN</item>
+        <item>DERAS</item>
+        <item>DUNIA</item>
+        <item>GAGAL</item>
+        <item>GARIS</item>
+        <item>GELAP</item>
+        <item>HIDUP</item>
+        <item>HUJAN</item>
+        <item>HUKUM</item>
+        <item>INDAH</item>
+        <item>INGAT</item>
+        <item>JALAN</item>
+        <item>JARAK</item>
+        <item>JATUH</item>
+        <item>JELAS</item>
+        <item>KABAR</item>
+        <item>KALAH</item>
+        <item>KASIH</item>
+        <item>KARTU</item>
+        <item>KERAS</item>
+        <item>KECIL</item>
+        <item>KERJA</item>
+        <item>KUNCI</item>
+        <item>LAYAR</item>
+        <item>LEMAH</item>
+        <item>LURUS</item>
+        <item>MAHAL</item>
+        <item>MAKAN</item>
+        <item>MANIS</item>
+        <item>MIMPI</item>
+        <item>MUDAH</item>
+        <item>NAFAS</item>
+        <item>NYATA</item>
+        <item>PANAS</item>
+        <item>PASTI</item>
+    </array>
+</resources>
