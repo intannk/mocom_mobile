@@ -1,108 +1,143 @@
 package com.example.wordle_test
 
-import androidx.room.Dao
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
-class GameRepository(private val gameStatisticDao: GameStatisticDao) {
+class GameRepository(private val dao: GameStatisticDao) {
 
-    private val _statistics = MutableStateFlow<List<GameStatistic>>(emptyList())
-    val statistics: StateFlow<List<GameStatistic>> = _statistics
-
-    suspend fun saveGameResult(
-        word: String,
-        isWon: Boolean,
-        attempts: Int,
-        gameType: String = "NORMAL"
-    ) {
-        val stat = GameStatistic(
-            date = LocalDate.now(),
-            word = word,
-            isWon = isWon,
-            attempts = attempts,
-            gameType = gameType
-        )
-        gameStatisticDao.insertGameStatistic(stat)
-        loadStatistics()
-    }
-
-    suspend fun loadStatistics() {
-        _statistics.emit(gameStatisticDao.getAllGameStatistics())
-    }
-
-//    suspend fun getTotalWins(): Int = gameStatisticDao.getTotalWins()
-//
-//    suspend fun getTotalLosses(): Int = gameStatisticDao.getTotalLosses()
-//
-//    suspend fun getAverageAttempts(): Double = gameStatisticDao.getAverageAttempts()
-
-    suspend fun getAverageAttempts(): Double {
-        return gameStatisticDao.getAverageAttempts() ?: 0.0  // Return 0.0 kalau null
-    }
-
-    suspend fun getTotalWins(): Int {
-        return try {
-            gameStatisticDao.getTotalWins() ?: 0
+    // Get total wins
+    suspend fun getTotalWins(): Int = withContext(Dispatchers.IO) {
+        try {
+            val stats = dao.getAllGameStatistics()
+            stats.count { it.isWon }
         } catch (e: Exception) {
             0
         }
     }
 
-    suspend fun getTotalLosses(): Int {
-        return try {
-            gameStatisticDao.getTotalLosses() ?: 0
+    // Get total losses
+    suspend fun getTotalLosses(): Int = withContext(Dispatchers.IO) {
+        try {
+            val stats = dao.getAllGameStatistics()
+            stats.count { !it.isWon }
         } catch (e: Exception) {
             0
         }
     }
 
-    suspend fun getDailyGameToday(): GameStatistic? {
-        return gameStatisticDao.getGameByDateAndType(LocalDate.now(), "DAILY")
-    }
-
-    suspend fun getPlayerRank(): String {
-        val totalWins = getTotalWins()
-        val totalLosses = getTotalLosses()
-        val totalGames = totalWins + totalLosses
-
-        return when {
-            totalGames == 0 -> "Newbie"
-            totalWins < 5 -> "Beginner"
-            totalWins < 15 -> "Intermediate"
-            totalWins < 30 -> "Advanced"
-            totalWins < 50 -> "Expert"
-            totalWins >= 50 -> "Master"
-            else -> "Unknown"
-        }
-    }
-
-    suspend fun getWinRate(): Double {
-        val totalWins = getTotalWins()
-        val totalLosses = getTotalLosses()
-        val totalGames = totalWins + totalLosses
-
-        return if (totalGames > 0) {
-            (totalWins.toDouble() / totalGames) * 100
-        } else {
+    // Get win rate
+    suspend fun getWinRate(): Double = withContext(Dispatchers.IO) {
+        try {
+            val stats = dao.getAllGameStatistics()
+            if (stats.isEmpty()) {
+                return@withContext 0.0
+            }
+            val wins = stats.count { it.isWon }
+            (wins.toDouble() / stats.size) * 100.0
+        } catch (e: Exception) {
             0.0
         }
     }
 
-    suspend fun getStreak(): Int {
-        val stats = gameStatisticDao.getAllGameStatistics()
-        var streak = 0
+    // Get average attempts (only for won games)
+    suspend fun getAverageAttempts(): Double = withContext(Dispatchers.IO) {
+        try {
+            val stats = dao.getAllGameStatistics()
+            val wonGames = stats.filter { it.isWon }
 
-        for (stat in stats) {
-            if (stat.isWon) {
-                streak++
-            } else {
-                break
+            if (wonGames.isEmpty()) {
+                return@withContext 0.0
             }
-        }
 
-        return streak
+            val totalAttempts = wonGames.sumOf { it.attempts }
+            totalAttempts.toDouble() / wonGames.size
+        } catch (e: Exception) {
+            0.0
+        }
+    }
+
+    // Get current winning streak
+    suspend fun getStreak(): Int = withContext(Dispatchers.IO) {
+        try {
+            val stats = dao.getAllGameStatistics()
+            if (stats.isEmpty()) {
+                return@withContext 0
+            }
+
+            // Start from most recent and count consecutive wins
+            var streak = 0
+            for (stat in stats.sortedByDescending { it.id }) {
+                if (stat.isWon) {
+                    streak++
+                } else {
+                    break
+                }
+            }
+            streak
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    // Calculate player rank
+    suspend fun getPlayerRank(): String = withContext(Dispatchers.IO) {
+        try {
+            val wins = getTotalWins()
+            when {
+                wins >= 100 -> "Master"
+                wins >= 50 -> "Expert"
+                wins >= 30 -> "Advanced"
+                wins >= 15 -> "Intermediate"
+                wins >= 5 -> "Beginner"
+                else -> "Newbie"
+            }
+        } catch (e: Exception) {
+            "Newbie"
+        }
+    }
+
+    // Check if daily game was played today
+    suspend fun getDailyGamePlayed(date: LocalDate): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val stats = dao.getAllGameStatistics()
+            stats.any {
+                it.gameType == "DAILY" &&
+                        it.date == date
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    // Save game result
+    suspend fun saveGameResult(
+        word: String,
+        isWon: Boolean,
+        attempts: Int,
+        gameType: String = "NORMAL",
+        playedDate: LocalDate = LocalDate.now()
+    ) = withContext(Dispatchers.IO) {
+        try {
+            val statistic = GameStatistic(
+                word = word,
+                date = playedDate,
+                isWon = isWon,
+                attempts = attempts,
+                gameType = gameType
+            )
+            dao.insertGameStatistic(statistic)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // Get all game statistics
+    suspend fun getAllGameStatistics() = withContext(Dispatchers.IO) {
+        try {
+            dao.getAllGameStatistics()
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 }
