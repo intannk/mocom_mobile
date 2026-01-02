@@ -74,6 +74,9 @@ class GameViewModel(
             return
         }
 
+        // Clear error message after valid word (from friend's version)
+        _errorMessage.value = ""
+
         val target = _word.value ?: return
 
         val alreadyGuessed = nonBlankGuesses.any { g ->
@@ -85,16 +88,54 @@ class GameViewModel(
             return
         }
 
-        val wordleGuess = WordleGuess(arrayListOf())
-
-        upperGuess.forEachIndexed { index, char ->
-            val characterGuess = WordleCharacterGuess(
-                character = char,
-                isInWord = target.contains(char),
-                isInCorrectPlace = target.getOrNull(index) == char
-            )
-            wordleGuess.chars.add(characterGuess)
+        // ---------- IMPROVED WORDLE LOGIC (from friend's version) ----------
+        // 1) Count frequency of each letter in target
+        val remainingCounts = mutableMapOf<Char, Int>()
+        target.forEach { c ->
+            remainingCounts[c] = (remainingCounts[c] ?: 0) + 1
         }
+
+        // 2) First pass: mark correct letters (green)
+        val tempChars = ArrayList<WordleCharacterGuess>(5)
+        upperGuess.forEachIndexed { index, c ->
+            if (target[index] == c) {
+                tempChars.add(
+                    WordleCharacterGuess(
+                        character = c,
+                        isInWord = true,
+                        isInCorrectPlace = true
+                    )
+                )
+                remainingCounts[c] = (remainingCounts[c] ?: 0) - 1
+            } else {
+                // placeholder, will be filled in second pass
+                tempChars.add(
+                    WordleCharacterGuess(
+                        character = c,
+                        isInWord = false,
+                        isInCorrectPlace = false
+                    )
+                )
+            }
+        }
+
+        // 3) Second pass: mark yellow if letter exists in remaining target
+        tempChars.forEachIndexed { index, guessChar ->
+            if (!guessChar.isInCorrectPlace) {
+                val c = guessChar.character!!
+                val countLeft = remainingCounts[c] ?: 0
+                if (countLeft > 0) {
+                    tempChars[index] = guessChar.copy(
+                        isInWord = true,
+                        isInCorrectPlace = false
+                    )
+                    remainingCounts[c] = countLeft - 1
+                }
+            }
+        }
+
+        val wordleGuess = WordleGuess(tempChars)
+        // ---------- END IMPROVED WORDLE LOGIC ----------
 
         val oldValues = nonBlankGuesses.toMutableList()
         oldValues.add(wordleGuess)
