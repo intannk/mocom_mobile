@@ -59,6 +59,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.compose.runtime:runtime-livedata:1.7.5")
+    implementation("androidx.gridlayout:gridlayout:1.0.0")
 
     // ===== Coroutines =====
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")

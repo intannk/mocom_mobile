@@ -1,10 +1,25 @@
 package com.example.wordle_test
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 class GameRepository(private val dao: GameStatisticDao) {
+
+    // StateFlow for statistics (from friend's version)
+    private val _statistics = MutableStateFlow<List<GameStatistic>>(emptyList())
+    val statistics: StateFlow<List<GameStatistic>> = _statistics
+
+    // Load statistics into StateFlow
+    suspend fun loadStatistics() {
+        try {
+            _statistics.emit(dao.getAllGameStatistics())
+        } catch (e: Exception) {
+            _statistics.emit(emptyList())
+        }
+    }
 
     // Get total wins
     suspend fun getTotalWins(): Int = withContext(Dispatchers.IO) {
@@ -57,7 +72,7 @@ class GameRepository(private val dao: GameStatisticDao) {
         }
     }
 
-    // Get current winning streak
+    // Get current winning streak (sorted by id for correct order)
     suspend fun getStreak(): Int = withContext(Dispatchers.IO) {
         try {
             val stats = dao.getAllGameStatistics()
@@ -97,7 +112,7 @@ class GameRepository(private val dao: GameStatisticDao) {
         }
     }
 
-    // Check if daily game was played today
+    // Check if daily game was played today (returns Boolean)
     suspend fun getDailyGamePlayed(date: LocalDate): Boolean = withContext(Dispatchers.IO) {
         try {
             val stats = dao.getAllGameStatistics()
@@ -107,6 +122,15 @@ class GameRepository(private val dao: GameStatisticDao) {
             }
         } catch (e: Exception) {
             false
+        }
+    }
+
+    // Get daily game for today (from friend's version - returns GameStatistic?)
+    suspend fun getDailyGameToday(): GameStatistic? = withContext(Dispatchers.IO) {
+        try {
+            dao.getGameByDateAndType(LocalDate.now(), "DAILY")
+        } catch (e: Exception) {
+            null
         }
     }
 
@@ -127,6 +151,7 @@ class GameRepository(private val dao: GameStatisticDao) {
                 gameType = gameType
             )
             dao.insertGameStatistic(statistic)
+            loadStatistics() // Refresh StateFlow after saving
         } catch (e: Exception) {
             e.printStackTrace()
         }
