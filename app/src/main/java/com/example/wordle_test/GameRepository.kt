@@ -1,7 +1,10 @@
 package com.example.wordle_test
 
+import androidx.room.Dao
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 class GameRepository(private val gameStatisticDao: GameStatisticDao) {
@@ -30,11 +33,31 @@ class GameRepository(private val gameStatisticDao: GameStatisticDao) {
         _statistics.emit(gameStatisticDao.getAllGameStatistics())
     }
 
-    suspend fun getTotalWins(): Int = gameStatisticDao.getTotalWins()
+//    suspend fun getTotalWins(): Int = gameStatisticDao.getTotalWins()
+//
+//    suspend fun getTotalLosses(): Int = gameStatisticDao.getTotalLosses()
+//
+//    suspend fun getAverageAttempts(): Double = gameStatisticDao.getAverageAttempts()
 
-    suspend fun getTotalLosses(): Int = gameStatisticDao.getTotalLosses()
+    suspend fun getAverageAttempts(): Double {
+        return gameStatisticDao.getAverageAttempts() ?: 0.0  // Return 0.0 kalau null
+    }
 
-    suspend fun getAverageAttempts(): Double = gameStatisticDao.getAverageAttempts()
+    suspend fun getTotalWins(): Int {
+        return try {
+            gameStatisticDao.getTotalWins() ?: 0
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    suspend fun getTotalLosses(): Int {
+        return try {
+            gameStatisticDao.getTotalLosses() ?: 0
+        } catch (e: Exception) {
+            0
+        }
+    }
 
     suspend fun getDailyGameToday(): GameStatistic? {
         return gameStatisticDao.getGameByDateAndType(LocalDate.now(), "DAILY")
