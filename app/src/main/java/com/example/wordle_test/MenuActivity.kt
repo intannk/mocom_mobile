@@ -5,14 +5,19 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -33,7 +38,6 @@ class MenuActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Initialize Database
         db = Room.databaseBuilder(
             applicationContext,
             WordleDatabase::class.java,
@@ -54,7 +58,7 @@ class MenuActivity : ComponentActivity() {
             Wordle_TestTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = Color(0xFF0A0E27)
                 ) {
                     MenuScreen(
                         menuViewModel = menuViewModel,
@@ -95,269 +99,596 @@ fun MenuScreen(
     val playerStats = menuViewModel.playerStats.observeAsState().value
     val dailyGamePlayed = menuViewModel.dailyGamePlayed.observeAsState(false).value
 
-    LazyColumn(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF0A0E27),
+                        Color(0xFF1A1F3A),
+                        Color(0xFF0F1629),
+                        Color(0xFF0A0E27)
+                    )
+                )
+            )
     ) {
-        // Header
-        item {
+        // Background circles (static)
+        Box(
+            modifier = Modifier
+                .offset(x = 50.dp, y = (-50).dp)
+                .size(200.dp)
+                .alpha(0.1f)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFF6366F1),
+                            Color.Transparent
+                        )
+                    ),
+                    CircleShape
+                )
+        )
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .offset(x = 50.dp, y = 100.dp)
+                .size(250.dp)
+                .alpha(0.08f)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFFEC4899),
+                            Color.Transparent
+                        )
+                    ),
+                    CircleShape
+                )
+        )
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            // Hero Section - Logo & Visual
+            item {
+                HeroSection()
+            }
+
+            // Action Buttons Section
+            item {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Daily Wordle Button
+                    PremiumGradientButton(
+                        text = if (dailyGamePlayed) "✓ Daily Selesai" else "🌟 Daily Challenge",
+                        subtitle = if (dailyGamePlayed) "Kembali besok!" else "Main sekali per hari",
+                        onClick = {
+                            val dateHashCode = LocalDate.now().hashCode()
+                            val index = (dateHashCode % wordBank.size).let {
+                                if (it < 0) it + wordBank.size else it
+                            }
+                            val dailyWord = wordBank[index]
+                            onPlayDaily(dailyWord)
+                        },
+                        enabled = !dailyGamePlayed,
+                        gradientColors = if (dailyGamePlayed) {
+                            listOf(Color(0xFF374151), Color(0xFF1F2937))
+                        } else {
+                            listOf(Color(0xFFEC4899), Color(0xFF8B5CF6), Color(0xFF6366F1))
+                        }
+                    )
+
+                    // Normal Play Button
+                    PremiumGradientButton(
+                        text = "⚡ Main Sekarang",
+                        subtitle = "Mode bebas tanpa batas",
+                        onClick = onPlayNormal,
+                        gradientColors = listOf(Color(0xFF06B6D4), Color(0xFF3B82F6), Color(0xFF6366F1))
+                    )
+                }
+            }
+
+            // Rank Badge
+            item {
+                GlowingRankCard(playerStats)
+            }
+
+            // Statistics Grid
+            item {
+                EnhancedStatsGrid(playerStats)
+            }
+
+            // Rank System Info
+            item {
+                RankSystemCard()
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(40.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun HeroSection() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(380.dp)
+            .shadow(24.dp, RoundedCornerShape(32.dp)),
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.Transparent
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.sweepGradient(
+                        colors = listOf(
+                            Color(0xFF6366F1),
+                            Color(0xFF8B5CF6),
+                            Color(0xFFEC4899),
+                            Color(0xFF06B6D4),
+                            Color(0xFF6366F1)
+                        )
+                    )
+                )
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.3f),
+                            Color.White.copy(alpha = 0.1f)
+                        )
+                    ),
+                    shape = RoundedCornerShape(32.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp)
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(24.dp)
             ) {
+                // Logo
                 Text(
-                    text = "🎮 WORDLE ID 🎮",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 32.sp
+                    text = "🎯",
+                    fontSize = 64.sp
                 )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = "Indonesian Wordle Game",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
 
-        // Player Rank Card
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
+                Spacer(Modifier.height(16.dp))
+
+                Text(
+                    text = "WORDLE",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 56.sp,
+                    color = Color.White,
+                    letterSpacing = 4.sp
+                )
+
+                Text(
+                    text = "INDONESIA",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.9f),
+                    letterSpacing = 6.sp
+                )
+
+                Spacer(Modifier.height(28.dp))
+
+                // Wordle Grid
                 Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    repeat(3) { row ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            repeat(5) { col ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .shadow(4.dp, RoundedCornerShape(10.dp))
+                                        .background(
+                                            when {
+                                                row == 0 && col < 3 -> Color(0xFF10B981)
+                                                row == 0 -> Color(0xFF374151)
+                                                row == 1 && col == 2 -> Color(0xFF10B981)
+                                                row == 1 -> Color(0xFFF59E0B)
+                                                else -> Color(0xFF1F2937)
+                                            },
+                                            RoundedCornerShape(10.dp)
+                                        )
+                                        .border(
+                                            2.dp,
+                                            Color.White.copy(alpha = 0.2f),
+                                            RoundedCornerShape(10.dp)
+                                        )
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(20.dp))
+
+                Box(
                     modifier = Modifier
                         .background(
-                            color = when (playerStats?.rank) {
-                                "Master" -> Color(0xFF6AAA64)
-                                "Expert" -> Color(0xFFC9B458)
-                                "Advanced" -> Color(0xFF787C7E)
-                                else -> MaterialTheme.colorScheme.surfaceVariant
-                            }
+                            Color.Black.copy(alpha = 0.3f),
+                            RoundedCornerShape(12.dp)
                         )
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .padding(horizontal = 20.dp, vertical = 10.dp)
                 ) {
                     Text(
-                        text = playerStats?.rank ?: "Newbie",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
+                        text = "Tebak kata dalam 6 percobaan!",
                         color = Color.White,
-                        fontSize = 28.sp
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "Current Rank",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }
         }
+    }
+}
 
-        // Statistics Grid
-        item {
+@Composable
+fun PremiumGradientButton(
+    text: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    gradientColors: List<Color>
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(80.dp)
+            .shadow(
+                elevation = if (enabled) 16.dp else 4.dp,
+                shape = RoundedCornerShape(20.dp)
+            ),
+        enabled = enabled,
+        shape = RoundedCornerShape(20.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Transparent,
+            disabledContainerColor = Color.Transparent
+        ),
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    if (enabled) {
+                        Brush.horizontalGradient(gradientColors)
+                    } else {
+                        Brush.horizontalGradient(
+                            listOf(Color(0xFF374151), Color(0xFF1F2937))
+                        )
+                    }
+                )
+                .border(
+                    1.dp,
+                    Color.White.copy(alpha = 0.2f),
+                    RoundedCornerShape(20.dp)
+                )
+                .padding(horizontal = 20.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Column {
+                Text(
+                    text = text,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    letterSpacing = 0.5.sp
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = subtitle,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White.copy(alpha = 0.8f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun GlowingRankCard(playerStats: PlayerStats?) {
+    val rankColors = when (playerStats?.rank) {
+        "Master" -> listOf(Color(0xFFFFD700), Color(0xFFFF8C00), Color(0xFFFFD700))
+        "Expert" -> listOf(Color(0xFFC0C0C0), Color(0xFF9CA3AF), Color(0xFFC0C0C0))
+        "Advanced" -> listOf(Color(0xFFCD7F32), Color(0xFF92400E), Color(0xFFCD7F32))
+        "Intermediate" -> listOf(Color(0xFF3B82F6), Color(0xFF1E40AF), Color(0xFF3B82F6))
+        "Beginner" -> listOf(Color(0xFF10B981), Color(0xFF059669), Color(0xFF10B981))
+        else -> listOf(Color(0xFF6B7280), Color(0xFF4B5563), Color(0xFF6B7280))
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(20.dp, RoundedCornerShape(28.dp)),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.Transparent
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .background(Brush.linearGradient(rankColors))
+                .border(
+                    2.dp,
+                    Color.White.copy(alpha = 0.3f),
+                    RoundedCornerShape(28.dp)
+                )
+                .fillMaxWidth()
+                .padding(28.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = when (playerStats?.rank) {
+                        "Master" -> "👑"
+                        "Expert" -> "🏆"
+                        "Advanced" -> "⭐"
+                        "Intermediate" -> "🎯"
+                        "Beginner" -> "🌟"
+                        else -> "🆕"
+                    },
+                    fontSize = 64.sp
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = playerStats?.rank ?: "Newbie",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                    fontSize = 40.sp,
+                    letterSpacing = 2.sp
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = "RANK KAMU SAAT INI",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.95f),
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 3.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun EnhancedStatsGrid(playerStats: PlayerStats?) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            GlassStatBox(
+                title = "Menang",
+                value = playerStats?.totalWins.toString(),
+                icon = "🎯",
+                modifier = Modifier.weight(1f),
+                gradientColors = listOf(Color(0xFF10B981), Color(0xFF059669))
+            )
+            GlassStatBox(
+                title = "Kalah",
+                value = playerStats?.totalLosses.toString(),
+                icon = "💔",
+                modifier = Modifier.weight(1f),
+                gradientColors = listOf(Color(0xFFEF4444), Color(0xFFDC2626))
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            GlassStatBox(
+                title = "Win Rate",
+                value = String.format("%.1f%%", playerStats?.winRate ?: 0.0),
+                icon = "📊",
+                modifier = Modifier.weight(1f),
+                gradientColors = listOf(Color(0xFF3B82F6), Color(0xFF2563EB))
+            )
+            GlassStatBox(
+                title = "Streak",
+                value = playerStats?.currentStreak.toString(),
+                icon = "🔥",
+                modifier = Modifier.weight(1f),
+                gradientColors = listOf(Color(0xFFF59E0B), Color(0xFFD97706))
+            )
+        }
+
+        GlassStatBox(
+            title = "Rata-rata Percobaan",
+            value = String.format("%.1f", playerStats?.averageAttempts ?: 0.0),
+            icon = "🎲",
+            modifier = Modifier.fillMaxWidth(),
+            gradientColors = listOf(Color(0xFF8B5CF6), Color(0xFF7C3AED))
+        )
+    }
+}
+
+@Composable
+fun GlassStatBox(
+    title: String,
+    value: String,
+    icon: String,
+    modifier: Modifier = Modifier,
+    gradientColors: List<Color>
+) {
+    Card(
+        modifier = modifier
+            .shadow(12.dp, RoundedCornerShape(20.dp)),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.Transparent
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .background(Brush.linearGradient(gradientColors))
+                .border(
+                    1.5.dp,
+                    Color.White.copy(alpha = 0.25f),
+                    RoundedCornerShape(20.dp)
+                )
+                .fillMaxWidth()
+                .padding(20.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = icon,
+                    fontSize = 36.sp
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                    fontSize = 32.sp
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.95f),
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    fontSize = 13.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun RankSystemCard() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(12.dp, RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF1A1F3A)
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .border(
+                    1.dp,
+                    Color.White.copy(alpha = 0.15f),
+                    RoundedCornerShape(24.dp)
+                )
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(24.dp)
             ) {
-                // Row 1: Wins and Losses
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    StatBox(
-                        title = "Menang",
-                        value = playerStats?.totalWins.toString(),
-                        modifier = Modifier.weight(1f),
-                        backgroundColor = Color(0xFF6AAA64)
-                    )
-                    StatBox(
-                        title = "Kalah",
-                        value = playerStats?.totalLosses.toString(),
-                        modifier = Modifier.weight(1f),
-                        backgroundColor = Color(0xFFFF6B6B)
-                    )
-                }
-
-                // Row 2: Win Rate and Streak
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    StatBox(
-                        title = "Win Rate",
-                        value = String.format("%.1f%%", playerStats?.winRate ?: 0.0),
-                        modifier = Modifier.weight(1f),
-                        backgroundColor = Color(0xFF3B82F6)
-                    )
-                    StatBox(
-                        title = "Streak",
-                        value = playerStats?.currentStreak.toString(),
-                        modifier = Modifier.weight(1f),
-                        backgroundColor = Color(0xFFFB923C)
-                    )
-                }
-
-                // Row 3: Average Attempts
-                StatBox(
-                    title = "Rata-rata Percobaan",
-                    value = String.format("%.1f", playerStats?.averageAttempts ?: 0.0),
-                    modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = Color(0xFF8B5CF6)
-                )
-            }
-        }
-
-        // Daily Wordle Button
-        item {
-            Button(
-                onClick = {
-                    val dateHashCode = LocalDate.now().hashCode()
-                    val index = (dateHashCode % wordBank.size).let { 
-                        if (it < 0) it + wordBank.size else it 
-                    }
-                    val dailyWord = wordBank[index]
-                    onPlayDaily(dailyWord)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .padding(horizontal = 8.dp),
-                enabled = !dailyGamePlayed,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF6AAA64),
-                    disabledContainerColor = Color(0xFF787C7E)
-                )
-            ) {
-                Text(
-                    text = if (dailyGamePlayed) "✓ Daily Wordle Sudah Dimainkan" else "🌟 Daily Wordle",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        // Play Normal Wordle Button
-        item {
-            Button(
-                onClick = onPlayNormal,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .padding(horizontal = 8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF3B82F6)
-                )
-            ) {
-                Text(
-                    text = "▶ Main Wordle",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        // Rank Distribution
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "🏆 Rank System",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 12.dp)
+                        text = "🏅",
+                        fontSize = 28.sp
                     )
-
-                    RankInfoItem("Newbie", "0 Kemenangan")
-                    RankInfoItem("Beginner", "5+ Kemenangan")
-                    RankInfoItem("Intermediate", "15+ Kemenangan")
-                    RankInfoItem("Advanced", "30+ Kemenangan")
-                    RankInfoItem("Expert", "50+ Kemenangan")
-                    RankInfoItem("Master", "100+ Kemenangan")
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = "Sistem Peringkat",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        fontSize = 22.sp
+                    )
                 }
+
+                Spacer(Modifier.height(20.dp))
+
+                RankInfoItem("Newbie", "0 Kemenangan", Color(0xFF6B7280), "🆕")
+                RankInfoItem("Beginner", "5+ Kemenangan", Color(0xFF10B981), "🌟")
+                RankInfoItem("Intermediate", "15+ Kemenangan", Color(0xFF3B82F6), "🎯")
+                RankInfoItem("Advanced", "30+ Kemenangan", Color(0xFFCD7F32), "⭐")
+                RankInfoItem("Expert", "50+ Kemenangan", Color(0xFFC0C0C0), "🏆")
+                RankInfoItem("Master", "100+ Kemenangan", Color(0xFFFFD700), "👑")
             }
         }
-
-        // Spacer at bottom
-        item {
-            Spacer(modifier = Modifier.height(24.dp))
-        }
     }
 }
 
 @Composable
-fun StatBox(
-    title: String,
-    value: String,
-    modifier: Modifier = Modifier,
-    backgroundColor: Color = MaterialTheme.colorScheme.primary
-) {
-    Card(
-        modifier = modifier,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .background(backgroundColor)
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                fontSize = 24.sp
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White
-            )
-        }
-    }
-}
-
-@Composable
-fun RankInfoItem(rank: String, requirement: String) {
+fun RankInfoItem(rank: String, requirement: String, rankColor: Color, icon: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+            .padding(vertical = 8.dp)
+            .background(
+                Brush.horizontalGradient(
+                    colors = listOf(
+                        rankColor.copy(alpha = 0.15f),
+                        rankColor.copy(alpha = 0.05f)
+                    )
+                ),
+                RoundedCornerShape(14.dp)
+            )
+            .border(
+                1.dp,
+                rankColor.copy(alpha = 0.3f),
+                RoundedCornerShape(14.dp)
+            )
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = rank,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = icon,
+                fontSize = 24.sp
+            )
+            Text(
+                text = rank,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = rankColor,
+                fontSize = 17.sp
+            )
+        }
         Text(
             text = requirement,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color(0xFF94A3B8),
+            fontWeight = FontWeight.Medium,
+            fontSize = 14.sp
         )
     }
 }
