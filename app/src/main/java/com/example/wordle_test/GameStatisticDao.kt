@@ -25,8 +25,9 @@ interface GameStatisticDao {
     @Query("SELECT COUNT(*) FROM game_statistics WHERE date = :date AND is_won = 1")
     suspend fun getWinsByDate(date: LocalDate): Int
 
+    // penting: nullable
     @Query("SELECT AVG(attempts) FROM game_statistics WHERE is_won = 1")
-    suspend fun getAverageAttempts(): Double
+    suspend fun getAverageAttempts(): Double?
 
     @Query("SELECT * FROM game_statistics WHERE game_type = 'DAILY' ORDER BY date DESC LIMIT 1")
     suspend fun getLastDailyGame(): GameStatistic?

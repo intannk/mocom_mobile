@@ -118,66 +118,73 @@ fun GameScreen(
             )
 
             IconButton(onClick = onBackToMenu) {
-                Icon(Icons.Default.Home, contentDescription = "Back to Menu", modifier = Modifier.size(28.dp))
+                Icon(
+                    Icons.Default.Home,
+                    contentDescription = "Back to Menu",
+                    modifier = Modifier.size(28.dp)
+                )
             }
         }
 
-        // Game Content
-        LazyColumn(
+        // Game Content (tengah)
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
-                .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .weight(1f),   // ambil semua ruang antara header dan keyboard
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Input Field (hanya tampil saat MAIN)
             if (gameState == WordleGameState.MAIN) {
-                item {
-                    OutlinedTextField(
-                        value = userGuess,
-                        singleLine = true,
-                        onValueChange = { text ->
-                            gameViewModel.clearErrorMessage()
-                            if (text.length <= 5) {
-                                userGuess = text.uppercase()
+                OutlinedTextField(
+                    value = userGuess,
+                    singleLine = true,
+                    onValueChange = { text ->
+                        gameViewModel.clearErrorMessage()
+                        if (text.length <= 5) {
+                            userGuess = text.uppercase()
+                        }
+                    },
+                    label = { Text("Tebak kata (5 huruf)") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            if (userGuess.length == 5) {
+                                gameViewModel.submitGuess(userGuess)
+                                userGuess = ""
                             }
-                        },
-                        label = { Text("Tebak kata (5 huruf)") },
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                if (userGuess.length == 5) {
-                                    gameViewModel.submitGuess(userGuess)
-                                    userGuess = ""
-                                }
-                            }
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                        }
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                )
             }
 
-            // Error Message
             if (errorMessage.isNotEmpty()) {
-                item {
-                    Text(
-                        text = errorMessage,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 4.dp)
+                )
+            }
+
+            // Grid + game over di‑center dalam area tengah
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                pastGuesses.forEach { guess ->
+                    Spacer(Modifier.height(4.dp))
+                    WordleGuessRow(guess = guess)
                 }
-            }
 
-            // Guesses Display
-            items(pastGuesses.size) { index ->
-                WordleGuessRow(guess = pastGuesses[index])
-            }
-
-            // Game Over Screen
-            if (gameState != WordleGameState.MAIN) {
-                item {
+                if (gameState != WordleGameState.MAIN) {
                     Spacer(modifier = Modifier.height(16.dp))
                     GameOverScreen(
                         gameState = gameState,
@@ -192,7 +199,7 @@ fun GameScreen(
             }
         }
 
-        // Keyboard di bawah
+// Keyboard di bawah
         if (gameState == WordleGameState.MAIN) {
             WordleKeyboard(
                 onLetterClick = { letter ->
@@ -230,7 +237,6 @@ fun GameScreen(
         }
     }
 }
-
 @Composable
 fun WordleKeyboard(
     onLetterClick: (String) -> Unit,
@@ -489,7 +495,7 @@ fun LetterTile(characterGuess: WordleCharacterGuess) {
     }
 
     Surface(
-        modifier = Modifier.size(48.dp),
+        modifier = Modifier.size(64.dp),
         shape = RoundedCornerShape(6.dp),
         color = bgColor,
         border = BorderStroke(1.dp, Color.Black)

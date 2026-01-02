@@ -74,34 +74,72 @@ class GameViewModel(
             return
         }
 
+        _errorMessage.value = ""
+
         val target = _word.value ?: return
 
         val alreadyGuessed = nonBlankGuesses.any { g ->
             g.chars.joinToString(separator = "") { it.character?.toString() ?: "" } == upperGuess
         }
-
         if (alreadyGuessed) {
             _errorMessage.value = "Kamu sudah menebak kata ini."
             return
         }
 
-        val wordleGuess = WordleGuess(arrayListOf())
-
-        upperGuess.forEachIndexed { index, char ->
-            val characterGuess = WordleCharacterGuess(
-                character = char,
-                isInWord = target.contains(char),
-                isInCorrectPlace = target.getOrNull(index) == char
-            )
-            wordleGuess.chars.add(characterGuess)
+        // ---------- LOGIKA BARU SEPERTI WORDLE ----------
+        // 1) Hitung frekuensi tiap huruf di target
+        val remainingCounts = mutableMapOf<Char, Int>()
+        target.forEach { c ->
+            remainingCounts[c] = (remainingCounts[c] ?: 0) + 1
         }
+
+        // 2) Pass pertama: tandai huruf yang tepat (hijau)
+        val tempChars = ArrayList<WordleCharacterGuess>(5)
+        upperGuess.forEachIndexed { index, c ->
+            if (target[index] == c) {
+                tempChars.add(
+                    WordleCharacterGuess(
+                        character = c,
+                        isInWord = true,
+                        isInCorrectPlace = true
+                    )
+                )
+                remainingCounts[c] = (remainingCounts[c] ?: 0) - 1
+            } else {
+                // placeholder, nanti diisi di pass kedua
+                tempChars.add(
+                    WordleCharacterGuess(
+                        character = c,
+                        isInWord = false,
+                        isInCorrectPlace = false
+                    )
+                )
+            }
+        }
+
+        // 3) Pass kedua: tandai kuning kalau masih ada sisa huruf di target
+        tempChars.forEachIndexed { index, guessChar ->
+            if (!guessChar.isInCorrectPlace) {
+                val c = guessChar.character!!
+                val countLeft = remainingCounts[c] ?: 0
+                if (countLeft > 0) {
+                    tempChars[index] = guessChar.copy(
+                        isInWord = true,
+                        isInCorrectPlace = false
+                    )
+                    remainingCounts[c] = countLeft - 1
+                }
+            }
+        }
+
+        val wordleGuess = WordleGuess(tempChars)
+        // ---------- AKHIR LOGIKA BARU ----------
 
         val oldValues = nonBlankGuesses.toMutableList()
         oldValues.add(wordleGuess)
 
         val newGuesses = mutableListOf<WordleGuess>()
         newGuesses.addAll(oldValues)
-
         repeat(6 - newGuesses.size) {
             newGuesses.add(WordleGuess.generateBlank())
         }

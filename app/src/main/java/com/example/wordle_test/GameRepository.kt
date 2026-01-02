@@ -34,7 +34,9 @@ class GameRepository(private val gameStatisticDao: GameStatisticDao) {
 
     suspend fun getTotalLosses(): Int = gameStatisticDao.getTotalLosses()
 
-    suspend fun getAverageAttempts(): Double = gameStatisticDao.getAverageAttempts()
+    // gunakan default 0.0 kalau belum ada data
+    suspend fun getAverageAttempts(): Double =
+        gameStatisticDao.getAverageAttempts() ?: 0.0
 
     suspend fun getDailyGameToday(): GameStatistic? {
         return gameStatisticDao.getGameByDateAndType(LocalDate.now(), "DAILY")
@@ -71,15 +73,9 @@ class GameRepository(private val gameStatisticDao: GameStatisticDao) {
     suspend fun getStreak(): Int {
         val stats = gameStatisticDao.getAllGameStatistics()
         var streak = 0
-
         for (stat in stats) {
-            if (stat.isWon) {
-                streak++
-            } else {
-                break
-            }
+            if (stat.isWon) streak++ else break
         }
-
         return streak
     }
 }
