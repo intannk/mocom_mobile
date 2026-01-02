@@ -74,6 +74,7 @@ class GameViewModel(
             return
         }
 
+        // Clear error message after valid word (from friend's version)
         _errorMessage.value = ""
 
         val target = _word.value ?: return
@@ -81,19 +82,20 @@ class GameViewModel(
         val alreadyGuessed = nonBlankGuesses.any { g ->
             g.chars.joinToString(separator = "") { it.character?.toString() ?: "" } == upperGuess
         }
+
         if (alreadyGuessed) {
             _errorMessage.value = "Kamu sudah menebak kata ini."
             return
         }
 
-        // ---------- LOGIKA BARU SEPERTI WORDLE ----------
-        // 1) Hitung frekuensi tiap huruf di target
+        // ---------- IMPROVED WORDLE LOGIC (from friend's version) ----------
+        // 1) Count frequency of each letter in target
         val remainingCounts = mutableMapOf<Char, Int>()
         target.forEach { c ->
             remainingCounts[c] = (remainingCounts[c] ?: 0) + 1
         }
 
-        // 2) Pass pertama: tandai huruf yang tepat (hijau)
+        // 2) First pass: mark correct letters (green)
         val tempChars = ArrayList<WordleCharacterGuess>(5)
         upperGuess.forEachIndexed { index, c ->
             if (target[index] == c) {
@@ -106,7 +108,7 @@ class GameViewModel(
                 )
                 remainingCounts[c] = (remainingCounts[c] ?: 0) - 1
             } else {
-                // placeholder, nanti diisi di pass kedua
+                // placeholder, will be filled in second pass
                 tempChars.add(
                     WordleCharacterGuess(
                         character = c,
@@ -117,7 +119,7 @@ class GameViewModel(
             }
         }
 
-        // 3) Pass kedua: tandai kuning kalau masih ada sisa huruf di target
+        // 3) Second pass: mark yellow if letter exists in remaining target
         tempChars.forEachIndexed { index, guessChar ->
             if (!guessChar.isInCorrectPlace) {
                 val c = guessChar.character!!
@@ -133,13 +135,14 @@ class GameViewModel(
         }
 
         val wordleGuess = WordleGuess(tempChars)
-        // ---------- AKHIR LOGIKA BARU ----------
+        // ---------- END IMPROVED WORDLE LOGIC ----------
 
         val oldValues = nonBlankGuesses.toMutableList()
         oldValues.add(wordleGuess)
 
         val newGuesses = mutableListOf<WordleGuess>()
         newGuesses.addAll(oldValues)
+
         repeat(6 - newGuesses.size) {
             newGuesses.add(WordleGuess.generateBlank())
         }
